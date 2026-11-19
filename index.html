@@ -40,9 +40,12 @@
     label { display: block; margin-bottom: 6px; font-size: .86rem; font-weight: 700; }
     .optional { color: var(--muted); font-size: .76rem; font-weight: 500; }
     input, select, textarea { width: 100%; border: 1px solid #bdcbd5; border-radius: 8px; padding: 10px 11px; background: #fff; color: var(--ink); font: inherit; font-size: .9rem; }
+    input[type="checkbox"] { width: auto; accent-color: var(--blue); }
     textarea { min-height: 84px; resize: vertical; line-height: 1.5; }
     input::placeholder, textarea::placeholder { color: #8293a0; }
     input:focus, select:focus, textarea:focus, button:focus-visible { outline: 3px solid rgb(20 149 194 / 24%); border-color: var(--focus); }
+    .checkbox-row { display: flex; align-items: center; gap: 9px; margin-top: 9px; color: var(--muted); font-size: .84rem; }
+    .checkbox-row label { margin: 0; font-weight: 600; }
     .preview-top { padding: 21px 22px 17px; border-bottom: 1px solid var(--line); }
     .preview-top .panel-heading { margin: 0; }
     .preview-body { padding: 20px 22px 22px; }
@@ -93,6 +96,10 @@
             <div class="field">
               <label for="incident-title">Incident / system <span class="optional">(optional)</span></label>
               <input id="incident-title" name="incidentTitle" placeholder="e.g. OMS / redo modification">
+            </div>
+            <div class="field full">
+              <label for="issue-category">Issue category <span class="optional">(optional)</span></label>
+              <input id="issue-category" name="issueCategory" placeholder="e.g. WEBSITE / LENS SELECTION">
             </div>
             <div class="field">
               <label for="severity">Severity</label>
@@ -150,11 +157,14 @@
           </div>
         </div>
         <div class="preview-body">
-          <p class="subject"><strong>Subject:</strong> <span id="subject-preview">Incident report</span></p>
+          <p class="subject"><strong>Subject:</strong> <span id="subject-preview">CYBER WEEK - Incident report</span></p>
+          <div class="checkbox-row">
+            <input id="cyber-week" name="cyberWeek" type="checkbox" checked form="incident-form">
+            <label for="cyber-week">Use “CYBER WEEK” as the default subject prefix</label>
+          </div>
           <div class="email-preview" id="email-preview" aria-live="polite"></div>
           <div class="actions">
             <button type="button" class="primary" id="copy-button">Copy email</button>
-            <button type="button" class="secondary" id="download-button">Download HTML</button>
             <button type="reset" form="incident-form" class="secondary" id="clear-button">Clear form</button>
           </div>
           <p class="status" id="status" role="status" aria-live="polite"></p>
@@ -188,14 +198,17 @@
 
       function render() {
         const incidentTitle = value('incidentTitle');
+        const issueCategory = value('issueCategory');
         const greeting = value('recipient');
-        subjectPreview.textContent = incidentTitle ? `Incident report: ${incidentTitle}` : 'Incident report';
+        const subjectPrefix = document.getElementById('cyber-week').checked ? 'CYBER WEEK - ' : '';
+        const subject = `${subjectPrefix}Incident report${incidentTitle ? `: ${incidentTitle}` : ''}`;
+        subjectPreview.textContent = subject;
         const rows = fieldDefinitions.map(([name, label]) => {
           const content = value(name);
           return `<tr><th scope="row">${escapeHtml(label)}</th><td>${content ? escapeHtml(content) : '<span class="empty">Not provided</span>'}</td></tr>`;
         }).join('');
         preview.innerHTML = `<p>Hi${greeting ? ` ${escapeHtml(greeting)}` : ''},</p>
-          <p>We encountered an issue${incidentTitle ? ` with ${escapeHtml(incidentTitle)}` : ''}. Please see the details below:</p>
+          <p>We encountered an issue${issueCategory ? ` ${escapeHtml(issueCategory)}` : ''}. Please see the details below:</p>
           <div class="table-wrap"><table class="email-table"><tbody>${rows}</tbody></table></div>
           <p class="signoff">Thanks!</p>`;
         status.textContent = '';
@@ -208,6 +221,7 @@
 
       form.addEventListener('input', render);
       form.addEventListener('change', render);
+      document.getElementById('cyber-week').addEventListener('change', render);
       form.addEventListener('reset', () => setTimeout(render, 0));
 
       document.getElementById('copy-button').addEventListener('click', async () => {
@@ -226,20 +240,8 @@
           }
           status.textContent = 'Email copied. Paste it into your email client.';
         } catch (_error) {
-          status.textContent = 'Could not access the clipboard. Try downloading the HTML instead.';
+          status.textContent = 'Could not access the clipboard. Allow clipboard access or use a supported browser and try again.';
         }
-      });
-
-      document.getElementById('download-button').addEventListener('click', () => {
-        const blob = new Blob([emailHtml()], { type: 'text/html;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'incident-email.html';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(link.href);
-        status.textContent = 'HTML email downloaded.';
       });
 
       render();
