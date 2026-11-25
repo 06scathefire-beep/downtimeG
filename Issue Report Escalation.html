@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Create incident escalation, update, and resolved report emails from one shareable builder.">
+  <title>Issue Report Escalation</title>
+  <style>
+    :root { color-scheme: light; --ink:#142b3b; --muted:#526878; --line:#d7e1e8; --blue:#006b91; --blue-dark:#005575; --blue-pale:#e7f2f7; --surface:#fff; --canvas:#f3f7fa; --focus:#1495c2; --critical:#a32626; --critical-pale:#fff0ef; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--canvas); color:var(--ink); }
+    .shell { max-width:1180px; margin:auto; padding:38px 24px 64px; }
+    header { margin-bottom:26px; }
+    .eyebrow { margin:0 0 8px; color:var(--blue); font-size:.76rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(1.8rem,3vw,2.45rem); letter-spacing:-.04em; }
+    .intro { max-width:680px; margin:10px 0 0; color:var(--muted); line-height:1.6; }
+    .tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+    .tab { border:1px solid var(--line); border-radius:9px; padding:11px 14px; background:#fff; color:var(--ink); font:inherit; font-size:.88rem; font-weight:750; cursor:pointer; }
+    .tab[aria-selected="true"] { border-color:var(--blue); background:var(--blue); color:#fff; }
+    .layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(360px,.92fr); gap:22px; align-items:start; }
+    .panel { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 8px 24px rgb(22 53 73 / 5%); }
+    .form-panel { padding:24px; }
+    .preview-panel { position:sticky; top:20px; overflow:hidden; }
+    .panel-heading { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:21px; }
+    h2 { margin:0; font-size:1.08rem; }
+    .hint { margin:5px 0 0; color:var(--muted); font-size:.86rem; line-height:1.45; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .field { min-width:0; }
+    .field.full { grid-column:1/-1; }
+    label { display:block; margin-bottom:6px; font-size:.86rem; font-weight:700; }
+    .optional { color:var(--muted); font-size:.76rem; font-weight:500; }
+    input,select,textarea { width:100%; border:1px solid #bdcbd5; border-radius:8px; padding:10px 11px; background:#fff; color:var(--ink); font:inherit; font-size:.9rem; }
+    input[type="checkbox"] { width:auto; accent-color:var(--blue); }
+    textarea { min-height:84px; resize:vertical; line-height:1.5; }
+    input::placeholder,textarea::placeholder { color:#8293a0; }
+    input:focus,select:focus,textarea:focus,button:focus-visible { outline:3px solid rgb(20 149 194 / 24%); border-color:var(--focus); }
+    .label-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+    .label-row label { margin:0; }
+    .reference-button { flex:none; padding:5px 9px; color:var(--blue-dark); background:var(--blue-pale); font-size:.76rem; }
+    .reference-button:hover { background:#d8ebf3; }
+    .tab-panel[hidden] { display:none; }
+    .checkbox-row { display:flex; align-items:center; gap:9px; margin-top:9px; color:var(--muted); font-size:.84rem; }
+    .checkbox-row label { margin:0; font-weight:600; }
+    .preview-top { padding:21px 22px 17px; border-bottom:1px solid var(--line); }
+    .preview-top .panel-heading { margin:0; }
+    .preview-body { padding:20px 22px 22px; }
+    .subject { margin:0 0 16px; font-size:.86rem; color:var(--muted); overflow-wrap:anywhere; }
+    .subject strong { color:var(--ink); }
+    .email-preview { min-height:300px; padding:18px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+    .email-preview p { margin:0 0 14px; line-height:1.55; }
+    .email-preview .signoff { margin:16px 0 0; }
+    .table-wrap { width:100%; overflow-x:auto; }
+    .email-table { width:100%; border-collapse:collapse; font-size:.84rem; line-height:1.45; }
+    .email-table th { width:36%; padding:9px 10px; text-align:left; vertical-align:top; background:var(--blue-pale); border:1px solid #d5e5ed; color:#18495e; }
+    .email-table td { padding:9px 10px; vertical-align:top; border:1px solid var(--line); white-space:pre-wrap; overflow-wrap:anywhere; }
+    .empty { color:#83929c; font-style:italic; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+    button { border:0; border-radius:8px; padding:10px 14px; font:inherit; font-size:.87rem; font-weight:750; cursor:pointer; }
+    .primary { color:#fff; background:var(--blue); }
+    .primary:hover { background:var(--blue-dark); }
+    .secondary { color:var(--ink); background:#eaf0f4; }
+    .secondary:hover { background:#dce7ed; }
+    .status { min-height:1.35em; margin:10px 0 0; color:#17613c; font-size:.83rem; }
+    .footnote { margin:12px 0 0; color:var(--muted); font-size:.77rem; line-height:1.45; }
+    dialog { width:min(680px,calc(100% - 28px)); max-height:min(82vh,760px); padding:0; overflow:auto; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 20px 70px rgb(14 35 48 / 28%); }
+    dialog::backdrop { background:rgb(15 31 42 / 55%); }
+    .dialog-header { position:sticky; top:0; z-index:1; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:20px 22px; background:var(--surface); border-bottom:1px solid var(--line); }
+    .dialog-header h2 { font-size:1.15rem; }
+    .dialog-header p { margin:5px 0 0; color:var(--muted); font-size:.86rem; line-height:1.45; }
+    .dialog-close { padding:7px 10px; color:var(--ink); background:#eaf0f4; }
+    .dialog-content { padding:18px 22px 22px; }
+    .reference-table { width:100%; border-collapse:collapse; font-size:.9rem; line-height:1.5; }
+    .reference-table th,.reference-table td { padding:10px 12px; text-align:left; vertical-align:top; border:1px solid var(--line); }
+    .reference-table th { background:var(--blue-pale); color:#18495e; }
+    .priority { white-space:nowrap; font-weight:750; }
+    .priority-critical { color:var(--critical); }
+    .priority-depends { color:#765000; }
+    .severity-list { display:grid; gap:12px; }
+    .severity-card { padding:13px 15px; border:1px solid var(--line); border-left:4px solid var(--blue); border-radius:8px; line-height:1.5; }
+    .severity-card strong { display:block; margin-bottom:3px; }
+    .severity-card.critical { border-left-color:var(--critical); background:var(--critical-pale); }
+    .urgent-note { margin:8px 0 0; color:var(--critical); font-weight:800; }
+    .severity-footnote { margin:14px 0 0; color:var(--muted); font-size:.82rem; }
+    @media (max-width:850px) { .layout { grid-template-columns:1fr; } .preview-panel { position:static; } }
+    @media (max-width:540px) { .shell { padding:26px 14px 40px; } .form-panel { padding:18px; } .grid { grid-template-columns:1fr; gap:13px; } .field.full { grid-column:auto; } .preview-top,.preview-body { padding-left:16px; padding-right:16px; } .email-preview { padding:12px; } }
+  </style>
+</head>
+<body>
+<main class="shell">
+  <header>
+    <p class="eyebrow">Operations · Incident communications</p>
+    <h1>Issue report escalation</h1>
+    <p class="intro">Create an incident escalation, progress update, or resolved report with a clear, copy-ready email summary.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Report templates">
+    <button type="button" class="tab" id="tab-escalation" role="tab" aria-selected="true" aria-controls="panel-escalation" data-tab="escalation">01 - Issue Escalation</button>
+    <button type="button" class="tab" id="tab-update" role="tab" aria-selected="false" aria-controls="panel-update" data-tab="update">02 - Issue Update</button>
+    <button type="button" class="tab" id="tab-resolved" role="tab" aria-selected="false" aria-controls="panel-resolved" data-tab="resolved">03 - Issue Resolved</button>
+  </div>
+
+  <div class="layout">
+    <section class="panel form-panel" aria-labelledby="details-heading">
+      <div class="panel-heading"><div><h2 id="details-heading">Report details</h2><p class="hint">Complete the fields for the selected template.</p></div></div>
+
+      <div id="panel-escalation" class="tab-panel" role="tabpanel" aria-labelledby="tab-escalation">
+        <form id="escalation-form" autocomplete="on"><div class="grid">
+          <div class="field"><label for="recipient">Greeting name <span class="optional">(optional)</span></label><input id="recipient" name="recipient" placeholder="e.g. team"></div>
+          <div class="field"><label for="incident-title">Incident / system <span class="optional">(optional)</span></label><input id="incident-title" name="incidentTitle" placeholder="e.g. OMS / redo modification"></div>
+          <div class="field full"><div class="label-row"><label for="issue-category">Issue category <span class="optional">(optional)</span></label><button type="button" class="reference-button" id="category-reference-button">View examples</button></div><input id="issue-category" name="issueCategory" placeholder="e.g. WEBSITE / LENS SELECTION"></div>
+          <div class="field"><div class="label-row"><label for="severity">Severity</label><button type="button" class="reference-button" id="severity-reference-button">Severity guide</button></div><select id="severity" name="severity"><option value="">Select severity</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+          <div class="field"><label for="issue">Issue</label><input id="issue" name="issue" placeholder="e.g. OMS redo related issue"></div>
+          <div class="field full"><label for="description">Issue description</label><textarea id="description" name="description" placeholder="What happened? Include the affected feature or service."></textarea></div>
+          <div class="field"><label for="detected">First detected / report time</label><input id="detected" name="detected" placeholder="e.g. Nov 13, 2:00 PM, Manila Timezone"></div>
+          <div class="field"><label for="cases">Number of cases</label><input id="cases" name="cases" placeholder="e.g. All agents"></div>
+          <div class="field full"><label for="impact">Customer or business impact</label><textarea id="impact" name="impact" placeholder="Who is affected, and how?"></textarea></div>
+          <div class="field full"><label for="evidence">Evidence</label><textarea id="evidence" name="evidence" placeholder="List screenshots, order IDs, logs, or other references."></textarea></div>
+          <div class="field full"><label for="action">Immediate action taken / workaround</label><textarea id="action" name="action" placeholder="What has been done, or what workaround is in place?"></textarea></div>
+          <div class="field full"><label for="escalated">Escalated to whom</label><input id="escalated" name="escalated" placeholder="e.g. OMS / IT"></div>
+        </div></form>
+      </div>
+
+      <div id="panel-update" class="tab-panel" role="tabpanel" aria-labelledby="tab-update" hidden>
+        <form id="update-form" autocomplete="on"><div class="grid">
+          <div class="field"><label for="update-recipient">Greeting name <span class="optional">(optional)</span></label><input id="update-recipient" name="recipient" placeholder="e.g. team"></div>
+          <div class="field"><label for="update-title">Incident / system <span class="optional">(optional)</span></label><input id="update-title" name="incidentTitle" placeholder="e.g. OMS / redo modification"></div>
+          <div class="field full"><label for="update-issue">Issue</label><input id="update-issue" name="issue" placeholder="Issue name"></div>
+          <div class="field full"><label for="update-status">Update</label><textarea id="update-status" name="update" placeholder="Latest progress / Current status"></textarea></div>
+          <div class="field full"><label for="update-target">Target resolution date <span class="optional">(if available)</span></label><input id="update-target" name="target" placeholder="Confirmed timeline from the relevant team"></div>
+        </div></form>
+      </div>
+
+      <div id="panel-resolved" class="tab-panel" role="tabpanel" aria-labelledby="tab-resolved" hidden>
+        <form id="resolved-form" autocomplete="on"><div class="grid">
+          <div class="field"><label for="resolved-recipient">Greeting name <span class="optional">(optional)</span></label><input id="resolved-recipient" name="recipient" placeholder="e.g. team"></div>
+          <div class="field"><label for="resolved-title">Incident / system <span class="optional">(optional)</span></label><input id="resolved-title" name="incidentTitle" placeholder="e.g. OMS / redo modification"></div>
+          <div class="field full"><label for="resolved-issue">Issue</label><input id="resolved-issue" name="issue" placeholder="Issue name"></div>
+          <div class="field"><label for="resolved-at">Resolved at</label><input id="resolved-at" name="resolvedAt" placeholder="e.g. Nov 13, 2:00 PM, Manila Timezone"></div>
+          <div class="field"><label for="resolved-by">Verified by</label><input id="resolved-by" name="verifiedBy" placeholder="Name / Team"></div>
+          <div class="field full"><label for="root-cause">Root cause</label><textarea id="root-cause" name="rootCause" placeholder="Describe the confirmed root cause."></textarea></div>
+          <div class="field full"><label for="corrective-actions">Corrective and preventive actions <span class="optional">(if available)</span></label><textarea id="corrective-actions" name="actions" placeholder="Describe corrective and preventive actions."></textarea></div>
+        </div></form>
+      </div>
+    </section>
+
+    <section class="panel preview-panel" aria-labelledby="preview-heading">
+      <div class="preview-top"><div class="panel-heading"><div><h2 id="preview-heading">Email preview</h2><p class="hint">Updates automatically as you type.</p></div></div></div>
+      <div class="preview-body">
+        <p class="subject"><strong>Subject:</strong> <span id="subject-preview">CYBER WEEK - Incident report</span></p>
+        <div class="checkbox-row"><input id="cyber-week" type="checkbox" checked><label for="cyber-week">Use “CYBER WEEK” as the default subject prefix</label></div>
+        <div class="email-preview" id="email-preview" aria-live="polite"></div>
+        <div class="actions"><button type="button" class="primary" id="copy-button">Copy email</button><button type="button" class="secondary" id="clear-button">Clear form</button></div>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+        <p class="footnote">Copy email places formatted content on your clipboard for pasting into an email client. Review the recipient and details before sending.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<dialog id="category-reference" aria-labelledby="category-reference-title"><div class="dialog-header"><div><h2 id="category-reference-title">Sample issue categories</h2><p>Use these examples as a guide. “Depends” means priority depends on scope and impact.</p></div><button type="button" class="dialog-close" data-close-dialog>Close</button></div><div class="dialog-content"><table class="reference-table"><thead><tr><th>Priority</th><th>Issue type</th></tr></thead><tbody><tr><td class="priority priority-critical">Critical</td><td>Website downtime or crash / Slow website loading</td></tr><tr><td class="priority priority-depends">Depends</td><td>Payment issues</td></tr><tr><td class="priority priority-depends">Depends</td><td>System-related issues (e.g. OMS, Webmail)</td></tr><tr><td class="priority priority-critical">Critical</td><td>Checkout page malfunction</td></tr><tr><td class="priority priority-critical">Critical</td><td>Shopping cart errors</td></tr><tr><td class="priority priority-critical">Critical</td><td>Product pages unavailable</td></tr><tr><td class="priority priority-critical">Critical</td><td>Discount code issues</td></tr><tr><td class="priority priority-depends">Depends</td><td>Third-party application failure</td></tr><tr><td class="priority priority-critical">Critical</td><td>Cybersecurity attack or suspicious activity</td></tr><tr><td class="priority priority-critical">Critical</td><td>Data breach or security incident</td></tr></tbody></table></div></dialog>
+
+<dialog id="severity-reference" aria-labelledby="severity-reference-title"><div class="dialog-header"><div><h2 id="severity-reference-title">Severity reminder</h2><p>Use the incident’s actual scope and impact when selecting a severity.</p></div><button type="button" class="dialog-close" data-close-dialog>Close</button></div><div class="dialog-content"><div class="severity-list"><section class="severity-card critical"><strong>Severity 1: Critical</strong>System-wide outage affecting all users and business operations.<p class="urgent-note">If critical, immediately inform CCM.</p></section><section class="severity-card"><strong>Severity 2: High</strong>Major functionality down, affecting more than 5 users/channels.</section><section class="severity-card"><strong>Severity 3: Medium</strong>Minor issue affecting 5 or fewer users/channels or non-critical functionality.</section></div><p class="severity-footnote">Follow your team’s escalation guidance for Low-severity incidents.</p></div></dialog>
+
+<script>
+(() => {
+  const preview = document.getElementById('email-preview');
+  const subjectPreview = document.getElementById('subject-preview');
+  const status = document.getElementById('status');
+  const cyberWeek = document.getElementById('cyber-week');
+  let activeTab = 'escalation';
+
+  const escapeHtml = text => String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const formValue = (formId, name) => String(new FormData(document.getElementById(formId)).get(name) || '').trim();
+
+  function tableRows(rows) {
+    return rows.map(([label, content]) => `<tr><th scope="row">${escapeHtml(label)}</th><td>${content ? escapeHtml(content) : '<span class="empty">Not provided</span>'}</td></tr>`).join('');
+  }
+
+  function render() {
+    status.textContent = '';
+    const prefix = cyberWeek.checked ? 'CYBER WEEK - ' : '';
+    let subject, greeting, opening, rows;
+
+    if (activeTab === 'escalation') {
+      const title = formValue('escalation-form','incidentTitle');
+      const category = formValue('escalation-form','issueCategory');
+      greeting = formValue('escalation-form','recipient');
+      subject = `${prefix}Incident report${title ? `: ${title}` : ''}`;
+      opening = `We encountered an issue${category ? ` ${category}` : ''}. Please see the details below:`;
+      rows = tableRows([
+        ['Severity',formValue('escalation-form','severity')], ['Issue',formValue('escalation-form','issue')],
+        ['Issue description of the incident',formValue('escalation-form','description')], ['First detected / report time',formValue('escalation-form','detected')],
+        ['Impact (customer or business impact)',formValue('escalation-form','impact')], ['Number of cases',formValue('escalation-form','cases')],
+        ['Evidence',formValue('escalation-form','evidence')], ['Action taken / workaround',formValue('escalation-form','action')],
+        ['Escalated to whom',formValue('escalation-form','escalated')]
+      ]);
+    } else if (activeTab === 'update') {
+      const title = formValue('update-form','incidentTitle');
+      greeting = formValue('update-form','recipient');
+      subject = `${prefix}Issue update${title ? `: ${title}` : ''}`;
+      opening = 'Please see the latest issue update below:';
+      rows = tableRows([
+        ['Issue',formValue('update-form','issue')], ['Update',formValue('update-form','update')],
+        ['Target resolution date (if available)',formValue('update-form','target')]
+      ]);
+    } else {
+      const title = formValue('resolved-form','incidentTitle');
+      greeting = formValue('resolved-form','recipient');
+      subject = `${prefix}Issue resolved${title ? `: ${title}` : ''}`;
+      opening = 'Please see the resolved incident details below:';
+      rows = tableRows([
+        ['Issue',formValue('resolved-form','issue')], ['Resolved at',formValue('resolved-form','resolvedAt')],
+        ['Verified by',formValue('resolved-form','verifiedBy')], ['Root cause',formValue('resolved-form','rootCause')],
+        ['Corrective and preventive actions (if available)',formValue('resolved-form','actions')]
+      ]);
+    }
+
+    subjectPreview.textContent = subject;
+    preview.innerHTML = `<p>Hi${greeting ? ` ${escapeHtml(greeting)}` : ''},</p><p>${escapeHtml(opening)}</p><div class="table-wrap"><table class="email-table"><tbody>${rows}</tbody></table></div><p class="signoff">Thanks!</p>`;
+  }
+
+  document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+    activeTab = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t === tab)));
+    document.querySelectorAll('.tab-panel').forEach(p => p.hidden = true);
+    document.getElementById(`panel-${activeTab}`).hidden = false;
+    render();
+  }));
+
+  document.querySelectorAll('.tab-panel form').forEach(form => {
+    form.addEventListener('input', render);
+    form.addEventListener('change', render);
+  });
+  cyberWeek.addEventListener('change', render);
+
+  document.getElementById('clear-button').addEventListener('click', () => {
+    document.querySelectorAll('.tab-panel form').forEach(form => form.reset());
+    cyberWeek.checked = true;
+    render();
+  });
+
+  const categoryDialog = document.getElementById('category-reference');
+  const severityDialog = document.getElementById('severity-reference');
+  document.getElementById('category-reference-button').addEventListener('click', () => categoryDialog.showModal());
+  document.getElementById('severity-reference-button').addEventListener('click', () => severityDialog.showModal());
+  document.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
+  [categoryDialog,severityDialog].forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); }));
+
+  function emailHtml() {
+    const content = preview.innerHTML;
+    return `<!doctype html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;color:#142b3b;line-height:1.5">${content.replace(/class="email-table"/g,'style="width:100%;border-collapse:collapse;font-size:14px"').replace(/<th scope="row">/g,'<th scope="row" style="width:36%;padding:9px 10px;text-align:left;vertical-align:top;background:#e7f2f7;border:1px solid #d5e5ed;color:#18495e">').replace(/<td>/g,'<td style="padding:9px 10px;vertical-align:top;border:1px solid #d7e1e8;white-space:pre-wrap">').replace(/<span class="empty">/g,'<span style="color:#83929c;font-style:italic">')}</body></html>`;
+  }
+
+  document.getElementById('copy-button').addEventListener('click', async () => {
+    try {
+      const html = emailHtml();
+      const text = preview.innerText;
+      if (navigator.clipboard && window.ClipboardItem) await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]);
+      else if (navigator.clipboard) await navigator.clipboard.writeText(text);
+      else throw new Error('Clipboard unavailable');
+      status.textContent = 'Email copied. Paste it into your email client.';
+    } catch (_) { status.textContent = 'Could not access the clipboard. Allow clipboard access or use a supported browser and try again.'; }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
