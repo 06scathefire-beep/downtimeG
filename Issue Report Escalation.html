@@ -6,7 +6,7 @@
   <meta name="description" content="Create incident escalation, update, and resolved report emails from one shareable builder.">
   <title>Issue Report Escalation</title>
   <style>
-    :root { color-scheme: light; --ink:#142b3b; --muted:#526878; --line:#d7e1e8; --blue:#006b91; --blue-dark:#005575; --blue-pale:#e7f2f7; --surface:#fff; --canvas:#f3f7fa; --focus:#1495c2; --critical:#a32626; --critical-pale:#fff0ef; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    :root { color-scheme: light; --ink:#142b3b; --muted:#526878; --line:#d7e1e8; --blue:#006b91; --blue-dark:#005575; --blue-pale:#e7f2f7; --surface:#fff; --canvas:#f3f7fa; --focus:#1495c2; --critical:#b42318; --critical-pale:#fff1f0; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--canvas); color:var(--ink); }
     .shell { max-width:1180px; margin:auto; padding:38px 24px 64px; }
@@ -46,8 +46,10 @@
     .preview-top { padding:21px 22px 17px; border-bottom:1px solid var(--line); }
     .preview-top .panel-heading { margin:0; }
     .preview-body { padding:20px 22px 22px; }
-    .subject { margin:0 0 16px; font-size:.86rem; color:var(--muted); overflow-wrap:anywhere; }
-    .subject strong { color:var(--ink); }
+    .subject { display:flex; align-items:flex-start; gap:10px; margin:0 0 16px; color:var(--ink); font-size:1.15rem; line-height:1.35; overflow-wrap:anywhere; }
+    .subject-label { flex:none; color:var(--muted); font-size:.86rem; line-height:1.65; }
+    #subject-preview { flex:1; min-width:0; font-weight:750; }
+    .subject-copy { flex:none; padding:7px 10px; color:var(--ink); background:#eaf0f4; font-size:.82rem; }
     .email-preview { min-height:300px; padding:18px; border:1px solid var(--line); border-radius:8px; background:#fff; }
     .email-preview p { margin:0 0 14px; line-height:1.55; }
     .email-preview .signoff { margin:16px 0 0; }
@@ -64,7 +66,7 @@
     .secondary:hover { background:#dce7ed; }
     .status { min-height:1.35em; margin:10px 0 0; color:#17613c; font-size:.83rem; }
     .footnote { margin:12px 0 0; color:var(--muted); font-size:.77rem; line-height:1.45; }
-    dialog { width:min(680px,calc(100% - 28px)); max-height:min(82vh,760px); padding:0; overflow:auto; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 20px 70px rgb(14 35 48 / 28%); }
+    dialog { width:min(680px,calc(100% - 28px)); max-height:min(82vh,760px); padding:0; overflow:auto; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 24px 70px rgb(12 38 54 / 24%); }
     dialog::backdrop { background:rgb(15 31 42 / 55%); }
     .dialog-header { position:sticky; top:0; z-index:1; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:20px 22px; background:var(--surface); border-bottom:1px solid var(--line); }
     .dialog-header h2 { font-size:1.15rem; }
@@ -84,7 +86,7 @@
     .urgent-note { margin:8px 0 0; color:var(--critical); font-weight:800; }
     .severity-footnote { margin:14px 0 0; color:var(--muted); font-size:.82rem; }
     @media (max-width:850px) { .layout { grid-template-columns:1fr; } .preview-panel { position:static; } }
-    @media (max-width:540px) { .shell { padding:26px 14px 40px; } .form-panel { padding:18px; } .grid { grid-template-columns:1fr; gap:13px; } .field.full { grid-column:auto; } .preview-top,.preview-body { padding-left:16px; padding-right:16px; } .email-preview { padding:12px; } }
+    @media (max-width:540px) { .shell { padding:26px 14px 40px; } .form-panel { padding:18px; } .grid { grid-template-columns:1fr; gap:13px; } .field.full { grid-column:auto; } .preview-top,.preview-body { padding-left:16px; padding-right:16px; } .subject { flex-wrap:wrap; } }
   </style>
 </head>
 <body>
@@ -108,9 +110,9 @@
       <div id="panel-escalation" class="tab-panel" role="tabpanel" aria-labelledby="tab-escalation">
         <form id="escalation-form" autocomplete="on"><div class="grid">
           <div class="field"><label for="recipient">Greeting name <span class="optional">(optional)</span></label><input id="recipient" name="recipient" placeholder="e.g. team"></div>
-          <div class="field"><label for="incident-title">Incident / system <span class="optional">(optional)</span></label><input id="incident-title" name="incidentTitle" placeholder="e.g. OMS / redo modification"></div>
-          <div class="field full"><div class="label-row"><label for="issue-category">Issue category <span class="optional">(optional)</span></label><button type="button" class="reference-button" id="category-reference-button">View examples</button></div><input id="issue-category" name="issueCategory" placeholder="e.g. WEBSITE / LENS SELECTION"></div>
-          <div class="field"><div class="label-row"><label for="severity">Severity</label><button type="button" class="reference-button" id="severity-reference-button">Severity guide</button></div><select id="severity" name="severity"><option value="">Select severity</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+          <div class="field"><label for="incident-title">Incident / system <span class="optional">(optional)</span></label><input id="incident-title" name="incidentTitle" placeholder="e.g. OMS / redo transaction"></div>
+          <div class="field full"><div class="label-row"><label for="issue-category">Issue category <span class="optional">(optional)</span></label><button type="button" class="reference-button" id="category-reference-button">View examples</button></div><select id="issue-category" name="issueCategory"><option value="">Select category</option><option>access / login issue</option><option>billing / payment issue</option><option>data / reporting issue</option><option>integration / API issue</option><option>performance / outage issue</option><option>security issue</option><option>other issue</option></select></div>
+          <div class="field"><div class="label-row"><label for="severity">Severity</label><button type="button" class="reference-button" id="severity-reference-button">Severity guide</button></div><select id="severity" name="severity"><option value="">Select severity</option><option>Critical - High impact, urgent action required</option><option>High - Major impact, prompt action required</option><option>Medium - Moderate impact</option><option>Low - Limited impact</option></select></div>
           <div class="field"><label for="issue">Issue</label><input id="issue" name="issue" placeholder="e.g. OMS redo related issue"></div>
           <div class="field full"><label for="description">Issue description</label><textarea id="description" name="description" placeholder="What happened? Include the affected feature or service."></textarea></div>
           <div class="field"><label for="detected">First detected / report time</label><input id="detected" name="detected" placeholder="e.g. Nov 13, 2:00 PM, Manila Timezone"></div>
@@ -129,7 +131,7 @@
           <div class="field"><label for="update-title">Incident / system <span class="optional">(shared)</span></label><input class="shared-field" id="update-title" name="incidentTitle" placeholder="Synced from Issue Escalation"></div>
           <div class="field full"><label for="update-issue">Issue <span class="optional">(shared)</span></label><input class="shared-field" id="update-issue" name="issue" placeholder="Synced from Issue Escalation"></div>
           <div class="field full"><label for="update-status">Update</label><textarea name="update" id="update-status" placeholder="Latest progress / Current status"></textarea></div>
-          <div class="field full"><label for="update-target">Target resolution date <span class="optional">(if available)</span></label><input id="update-target" name="target" placeholder="Confirmed timeline from the relevant team"></div>
+          <div class="field full"><label for="update-target">Target resolution date <span class="optional">(if available)</span></label><input id="update-target" name="target" placeholder="Confirmed target resolution date and time"></div>
         </div></form>
       </div>
 
@@ -142,7 +144,7 @@
           <div class="field"><label for="resolved-at">Resolved at</label><input id="resolved-at" name="resolvedAt" placeholder="e.g. Nov 13, 2:00 PM, Manila Timezone"></div>
           <div class="field"><label for="resolved-by">Verified by</label><input id="resolved-by" name="verifiedBy" placeholder="Name / Team"></div>
           <div class="field full"><label for="root-cause">Root cause</label><textarea id="root-cause" name="rootCause" placeholder="Describe the confirmed root cause."></textarea></div>
-          <div class="field full"><label for="corrective-actions">Corrective and preventive actions <span class="optional">(if available)</span></label><textarea id="corrective-actions" name="actions" placeholder="Describe corrective and preventive actions."></textarea></div>
+          <div class="field full"><label for="corrective-actions">Corrective and preventive actions <span class="optional">(if available)</span></label><textarea id="corrective-actions" name="actions" placeholder="Actions completed or scheduled to prevent recurrence."></textarea></div>
         </div></form>
       </div>
     </section>
@@ -150,7 +152,7 @@
     <section class="panel preview-panel" aria-labelledby="preview-heading">
       <div class="preview-top"><div class="panel-heading"><div><h2 id="preview-heading">Email preview</h2><p class="hint">Updates automatically as you type.</p></div></div></div>
       <div class="preview-body">
-        <p class="subject"><strong>Subject:</strong> <span id="subject-preview">CYBER WEEK - Incident report</span></p>
+        <div class="subject"><span class="subject-label">Subject:</span><span id="subject-preview">CYBER WEEK - Incident report</span><button type="button" class="subject-copy" id="copy-subject-button">Copy subject</button></div>
         <div class="checkbox-row"><input id="cyber-week" type="checkbox" checked><label for="cyber-week">Use “CYBER WEEK” as the default subject prefix</label></div>
         <div class="email-preview" id="email-preview" aria-live="polite"></div>
         <div class="actions"><button type="button" class="primary" id="copy-button">Copy email</button><button type="button" class="secondary" id="clear-button">Clear form</button></div>
@@ -161,9 +163,9 @@
   </div>
 </main>
 
-<dialog id="category-reference" aria-labelledby="category-reference-title"><div class="dialog-header"><div><h2 id="category-reference-title">Sample issue categories</h2><p>Use these examples as a guide. “Depends” means priority depends on scope and impact.</p></div><button type="button" class="dialog-close" data-close-dialog>Close</button></div><div class="dialog-content"><table class="reference-table"><thead><tr><th>Priority</th><th>Issue type</th></tr></thead><tbody><tr><td class="priority priority-critical">Critical</td><td>Website downtime or crash / Slow website loading</td></tr><tr><td class="priority priority-depends">Depends</td><td>Payment issues</td></tr><tr><td class="priority priority-depends">Depends</td><td>System-related issues (e.g. OMS, Webmail)</td></tr><tr><td class="priority priority-critical">Critical</td><td>Checkout page malfunction</td></tr><tr><td class="priority priority-critical">Critical</td><td>Shopping cart errors</td></tr><tr><td class="priority priority-critical">Critical</td><td>Product pages unavailable</td></tr><tr><td class="priority priority-critical">Critical</td><td>Discount code issues</td></tr><tr><td class="priority priority-depends">Depends</td><td>Third-party application failure</td></tr><tr><td class="priority priority-critical">Critical</td><td>Cybersecurity attack or suspicious activity</td></tr><tr><td class="priority priority-critical">Critical</td><td>Data breach or security incident</td></tr></tbody></table></div></dialog>
+<dialog id="category-reference" aria-labelledby="category-reference-title"><div class="dialog-header"><div><h2 id="category-reference-title">Sample issue categories</h2><p>Use these examples as a guide; choose the category that matches the incident.</p></div><button type="button" class="dialog-close" data-close-dialog>Close</button></div><div class="dialog-content"><table class="reference-table"><thead><tr><th>Category</th><th>Example</th></tr></thead><tbody><tr><td>Access / login</td><td>Multiple agents unable to log in</td></tr><tr><td>Billing / payment</td><td>Payment confirmation not generated</td></tr><tr><td>Data / reporting</td><td>Dashboard totals delayed or incorrect</td></tr><tr><td>Integration / API</td><td>OMS response failing between systems</td></tr><tr><td>Performance / outage</td><td>Application unavailable or slow</td></tr><tr><td>Security</td><td>Suspicious account or unauthorized access</td></tr></tbody></table></div></dialog>
 
-<dialog id="severity-reference" aria-labelledby="severity-reference-title"><div class="dialog-header"><div><h2 id="severity-reference-title">Severity reminder</h2><p>Use the incident’s actual scope and impact when selecting a severity.</p></div><button type="button" class="dialog-close" data-close-dialog>Close</button></div><div class="dialog-content"><div class="severity-list"><section class="severity-card critical"><strong>Severity 1: Critical</strong>System-wide outage affecting all users and business operations.<p class="urgent-note">If critical, immediately inform CCM.</p></section><section class="severity-card"><strong>Severity 2: High</strong>Major functionality down, affecting more than 5 users/channels.</section><section class="severity-card"><strong>Severity 3: Medium</strong>Minor issue affecting 5 or fewer users/channels or non-critical functionality.</section></div><p class="severity-footnote">Follow your team’s escalation guidance for Low-severity incidents.</p></div></dialog>
+<dialog id="severity-reference" aria-labelledby="severity-reference-title"><div class="dialog-header"><div><h2 id="severity-reference-title">Severity reminder</h2><p>Use the incident’s actual scope and impact when selecting severity.</p></div><button type="button" class="dialog-close" data-close-dialog>Close</button></div><div class="dialog-content"><div class="severity-list"><div class="severity-card critical"><strong>Critical</strong>Severe business or customer impact, widespread outage, or urgent operational risk.<p class="urgent-note">Escalate immediately.</p></div><div class="severity-card"><strong>High</strong>Major impact with prompt action required.</div><div class="severity-card"><strong>Medium</strong>Moderate impact or a workaround is available.</div><div class="severity-card"><strong>Low</strong>Limited impact or low operational risk.</div></div><p class="severity-footnote">When in doubt, describe the impact clearly and use the least ambiguous severity option.</p></div></dialog>
 
 <script>
 (() => {
@@ -228,7 +230,7 @@
       ]);
     }
     subjectPreview.textContent = subject;
-    preview.innerHTML = `<p>Hi${greeting ? ` ${escapeHtml(greeting)}` : ''},</p><p>${escapeHtml(opening)}</p><div class="table-wrap"><table class="email-table"><tbody>${rows}</tbody></table></div><p class="signoff">Thanks!</p>`;
+    preview.innerHTML = `<p>Hi${greeting ? ` ${escapeHtml(greeting)}` : ''},</p><p>${escapeHtml(opening)}</p><div class="table-wrap"><table class="email-table"><tbody>${rows}</tbody></table></div><p class="signoff">Regards,<br>[Name / Team]</p>`;
   }
 
   document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
@@ -256,13 +258,22 @@
   [categoryDialog,severityDialog].forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); }));
   function emailHtml() {
     const content = preview.innerHTML;
-    return `<!doctype html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;color:#142b3b;line-height:1.5">${content.replace(/class="email-table"/g,'style="width:100%;border-collapse:collapse;font-size:14px"').replace(/<th scope="row">/g,'<th scope="row" style="width:36%;padding:9px 10px;text-align:left;vertical-align:top;background:#e7f2f7;border:1px solid #d5e5ed;color:#18495e">').replace(/<td>/g,'<td style="padding:9px 10px;vertical-align:top;border:1px solid #d7e1e8;white-space:pre-wrap">').replace(/<span class="empty">/g,'<span style="color:#83929c;font-style:italic">')}</body></html>`;
+    return `<!doctype html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;color:#142b3b;line-height:1.5">${content.replace(/class="email-table"/g,'style="width:100%;border-collapse:collapse;font-size:14px"').replace(/<th scope="row">/g,'<th scope="row" style="width:36%;padding:9px 10px;text-align:left;vertical-align:top;background:#e7f2f7;border:1px solid #d5e5ed">').replace(/<td>/g,'<td style="padding:9px 10px;vertical-align:top;border:1px solid #d7e1e8">')}</body></html>`;
   }
+  async function copyText(text, successMessage) {
+    try {
+      await navigator.clipboard.writeText(text);
+      status.textContent = successMessage;
+    } catch (_) {
+      status.textContent = 'Could not access the clipboard. Allow clipboard access or use a supported browser and try again.';
+    }
+  }
+  document.getElementById('copy-subject-button').addEventListener('click', () => copyText(subjectPreview.textContent, 'Subject copied.'));
   document.getElementById('copy-button').addEventListener('click', async () => {
     try {
       const html = emailHtml();
       const text = preview.innerText;
-      if (navigator.clipboard && window.ClipboardItem) await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]);
+      if (navigator.clipboard && window.ClipboardItem) await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})}));
       else if (navigator.clipboard) await navigator.clipboard.writeText(text);
       else throw new Error('Clipboard unavailable');
       status.textContent = 'Email copied. Paste it into your email client.';
