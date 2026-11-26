@@ -39,6 +39,8 @@
     .reference-button { flex:none; padding:5px 9px; color:var(--blue-dark); background:var(--blue-pale); font-size:.76rem; }
     .reference-button:hover { background:#d8ebf3; }
     .tab-panel[hidden] { display:none; }
+    .shared-note { margin:0 0 14px; padding:10px 12px; border:1px solid #d5e5ed; border-radius:8px; background:var(--blue-pale); color:#18495e; font-size:.82rem; line-height:1.45; }
+    .shared-field input { background:#f6fafc; }
     .checkbox-row { display:flex; align-items:center; gap:9px; margin-top:9px; color:var(--muted); font-size:.84rem; }
     .checkbox-row label { margin:0; font-weight:600; }
     .preview-top { padding:21px 22px 17px; border-bottom:1px solid var(--line); }
@@ -122,19 +124,21 @@
 
       <div id="panel-update" class="tab-panel" role="tabpanel" aria-labelledby="tab-update" hidden>
         <form id="update-form" autocomplete="on"><div class="grid">
-          <div class="field"><label for="update-recipient">Greeting name <span class="optional">(optional)</span></label><input id="update-recipient" name="recipient" placeholder="e.g. team"></div>
-          <div class="field"><label for="update-title">Incident / system <span class="optional">(optional)</span></label><input id="update-title" name="incidentTitle" placeholder="e.g. OMS / redo modification"></div>
-          <div class="field full"><label for="update-issue">Issue</label><input id="update-issue" name="issue" placeholder="Issue name"></div>
-          <div class="field full"><label for="update-status">Update</label><textarea id="update-status" name="update" placeholder="Latest progress / Current status"></textarea></div>
+          <p class="shared-note field full">Greeting name, incident/system, and issue are shared with Issue Escalation and stay synchronized as you type.</p>
+          <div class="field"><label for="update-recipient">Greeting name <span class="optional">(shared)</span></label><input class="shared-field" id="update-recipient" name="recipient" placeholder="Synced from Issue Escalation"></div>
+          <div class="field"><label for="update-title">Incident / system <span class="optional">(shared)</span></label><input class="shared-field" id="update-title" name="incidentTitle" placeholder="Synced from Issue Escalation"></div>
+          <div class="field full"><label for="update-issue">Issue <span class="optional">(shared)</span></label><input class="shared-field" id="update-issue" name="issue" placeholder="Synced from Issue Escalation"></div>
+          <div class="field full"><label for="update-status">Update</label><textarea name="update" id="update-status" placeholder="Latest progress / Current status"></textarea></div>
           <div class="field full"><label for="update-target">Target resolution date <span class="optional">(if available)</span></label><input id="update-target" name="target" placeholder="Confirmed timeline from the relevant team"></div>
         </div></form>
       </div>
 
       <div id="panel-resolved" class="tab-panel" role="tabpanel" aria-labelledby="tab-resolved" hidden>
         <form id="resolved-form" autocomplete="on"><div class="grid">
-          <div class="field"><label for="resolved-recipient">Greeting name <span class="optional">(optional)</span></label><input id="resolved-recipient" name="recipient" placeholder="e.g. team"></div>
-          <div class="field"><label for="resolved-title">Incident / system <span class="optional">(optional)</span></label><input id="resolved-title" name="incidentTitle" placeholder="e.g. OMS / redo modification"></div>
-          <div class="field full"><label for="resolved-issue">Issue</label><input id="resolved-issue" name="issue" placeholder="Issue name"></div>
+          <p class="shared-note field full">Greeting name, incident/system, and issue are shared with Issue Escalation and stay synchronized as you type.</p>
+          <div class="field"><label for="resolved-recipient">Greeting name <span class="optional">(shared)</span></label><input class="shared-field" id="resolved-recipient" name="recipient" placeholder="Synced from Issue Escalation"></div>
+          <div class="field"><label for="resolved-title">Incident / system <span class="optional">(shared)</span></label><input class="shared-field" id="resolved-title" name="incidentTitle" placeholder="Synced from Issue Escalation"></div>
+          <div class="field full"><label for="resolved-issue">Issue <span class="optional">(shared)</span></label><input class="shared-field" id="resolved-issue" name="issue" placeholder="Synced from Issue Escalation"></div>
           <div class="field"><label for="resolved-at">Resolved at</label><input id="resolved-at" name="resolvedAt" placeholder="e.g. Nov 13, 2:00 PM, Manila Timezone"></div>
           <div class="field"><label for="resolved-by">Verified by</label><input id="resolved-by" name="verifiedBy" placeholder="Name / Team"></div>
           <div class="field full"><label for="root-cause">Root cause</label><textarea id="root-cause" name="rootCause" placeholder="Describe the confirmed root cause."></textarea></div>
@@ -167,20 +171,29 @@
   const subjectPreview = document.getElementById('subject-preview');
   const status = document.getElementById('status');
   const cyberWeek = document.getElementById('cyber-week');
+  const sharedFields = [
+    ['recipient', 'update-recipient', 'resolved-recipient'],
+    ['incident-title', 'update-title', 'resolved-title'],
+    ['issue', 'update-issue', 'resolved-issue']
+  ];
   let activeTab = 'escalation';
 
   const escapeHtml = text => String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const formValue = (formId, name) => String(new FormData(document.getElementById(formId)).get(name) || '').trim();
-
+  function syncSharedFields(source) {
+    sharedFields.forEach(ids => {
+      if (!ids.includes(source.id)) return;
+      const value = source.value;
+      ids.filter(id => id !== source.id).forEach(id => { document.getElementById(id).value = value; });
+    });
+  }
   function tableRows(rows) {
     return rows.map(([label, content]) => `<tr><th scope="row">${escapeHtml(label)}</th><td>${content ? escapeHtml(content) : '<span class="empty">Not provided</span>'}</td></tr>`).join('');
   }
-
   function render() {
     status.textContent = '';
     const prefix = cyberWeek.checked ? 'CYBER WEEK - ' : '';
     let subject, greeting, opening, rows;
-
     if (activeTab === 'escalation') {
       const title = formValue('escalation-form','incidentTitle');
       const category = formValue('escalation-form','issueCategory');
@@ -214,7 +227,6 @@
         ['Corrective and preventive actions (if available)',formValue('resolved-form','actions')]
       ]);
     }
-
     subjectPreview.textContent = subject;
     preview.innerHTML = `<p>Hi${greeting ? ` ${escapeHtml(greeting)}` : ''},</p><p>${escapeHtml(opening)}</p><div class="table-wrap"><table class="email-table"><tbody>${rows}</tbody></table></div><p class="signoff">Thanks!</p>`;
   }
@@ -226,31 +238,26 @@
     document.getElementById(`panel-${activeTab}`).hidden = false;
     render();
   }));
-
   document.querySelectorAll('.tab-panel form').forEach(form => {
-    form.addEventListener('input', render);
-    form.addEventListener('change', render);
+    form.addEventListener('input', event => { syncSharedFields(event.target); render(); });
+    form.addEventListener('change', event => { syncSharedFields(event.target); render(); });
   });
   cyberWeek.addEventListener('change', render);
-
   document.getElementById('clear-button').addEventListener('click', () => {
     document.querySelectorAll('.tab-panel form').forEach(form => form.reset());
     cyberWeek.checked = true;
     render();
   });
-
   const categoryDialog = document.getElementById('category-reference');
   const severityDialog = document.getElementById('severity-reference');
   document.getElementById('category-reference-button').addEventListener('click', () => categoryDialog.showModal());
   document.getElementById('severity-reference-button').addEventListener('click', () => severityDialog.showModal());
   document.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
   [categoryDialog,severityDialog].forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); }));
-
   function emailHtml() {
     const content = preview.innerHTML;
     return `<!doctype html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;color:#142b3b;line-height:1.5">${content.replace(/class="email-table"/g,'style="width:100%;border-collapse:collapse;font-size:14px"').replace(/<th scope="row">/g,'<th scope="row" style="width:36%;padding:9px 10px;text-align:left;vertical-align:top;background:#e7f2f7;border:1px solid #d5e5ed;color:#18495e">').replace(/<td>/g,'<td style="padding:9px 10px;vertical-align:top;border:1px solid #d7e1e8;white-space:pre-wrap">').replace(/<span class="empty">/g,'<span style="color:#83929c;font-style:italic">')}</body></html>`;
   }
-
   document.getElementById('copy-button').addEventListener('click', async () => {
     try {
       const html = emailHtml();
@@ -261,7 +268,6 @@
       status.textContent = 'Email copied. Paste it into your email client.';
     } catch (_) { status.textContent = 'Could not access the clipboard. Allow clipboard access or use a supported browser and try again.'; }
   });
-
   render();
 })();
 </script>
